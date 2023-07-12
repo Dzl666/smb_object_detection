@@ -3,6 +3,8 @@ import rospy
 from std_msgs.msg import String
 import numpy as np
 from sklearn.cluster import KMeans
+import tf2_ros
+from geometry_msgs import PointStamped
 
 # CLASSES = [11, 24, 25, 39, 56, 74]
 CLASSES = [
@@ -21,8 +23,27 @@ detected_info_messages = []
 
 def detection_info_callback(msg):
     # Append received message to the list
-
     # TODO change frame to world frame
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+
+    pt = PointStamped()
+    pt.header.stamp = rospy.Time.now()
+    t.header.frame_id = "rgb_camera_optical_link"
+    pt.point.x = msg.position.x
+    pt.point.y = msg.position.y
+    pt.point.z = msg.position.z
+
+    try:
+        pt2 = tf_buffer.transform(pt, "map_o3d") # Should be target, map_o3d
+        msg.position.x = pt2.point.x
+        msg.position.y = pt2.point.y
+        msg.position.z = pt2.point.z
+    except:
+        e = sys.exc_info()[0]
+        rospy.logerr("FUCK YOU")
+        sys.exit(1)
+
     detected_info_messages.append(msg)
 
 def process_detected_objects_callback(msg):
