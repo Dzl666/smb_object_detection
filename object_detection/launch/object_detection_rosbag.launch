@@ -1,5 +1,4 @@
 <launch>
-<!-- TODO load the bag yaml file -->
   <arg name="rosbag_name" default="smb_object_detect_3"/>
   <arg name="config_name" default="smb_object_detect_34"/>
   <arg name="rosbag_path" default="/home/zilong/git/$(arg rosbag_name).bag"/>
@@ -19,22 +18,20 @@
 
   <param name ="use_sim_time" value="true"/>
 
+  <!-- Launch the object detection process -->
   <include file="$(find object_detection)/launch/object_detection.launch">
     <arg name="gpu" value="$(arg gpu)" />
     <arg name="input_camera_name" value="$(arg input_camera_name)" />
     <arg name="lidar_topic" value="$(arg lidar_topic)" />
   </include>
 
+  <!-- Visualize the point -->
   <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen"
     args="-d $(find object_detection)/rviz/object_detection.rviz">
     <rosparam command="load" file="$(arg config_file)" />
   </node>
 
-  <node pkg="rosbag" type="play" name="player" output="screen" args="-d 3 --clock $(arg rosbag_path)" required="false"/>
+  <!-- Play the bag -->
+  <node pkg="rosbag" type="play" name="player" output="screen" 
+    args="-d 10 -r 0.5 --clock $(arg rosbag_path)" required="false"/>
 </launch>
-
-<!-- HAve it run locally on Jetson -->
-<!-- Clean code and launch folder -->
-<!-- yolo runs from local -->
-<!-- Try to launch jetson stuff from "nuc", look at machine tag -->
-<!-- seperate launch file for local and jetson -->

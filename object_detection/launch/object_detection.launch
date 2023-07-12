@@ -1,7 +1,11 @@
 <launch>
-  <!-- launch file to run object detection:
-       by default, the object detection runs on the jetson xavier GPU
-       while the images are debayered on the local machine. -->
+    <!-- launch file to run object detection:
+        by default, the object detection runs on the jetson xavier GPU
+        while the images are debayered on the local machine. -->
+
+    <!-- HAve it run locally on Jetson -->
+    <!-- Try to launch jetson stuff from "nuc", look at machine tag -->
+    <!-- seperate launch file for local and jetson -->
 
   <arg  name="smb_name" 
         default="$(optenv SMB_NAME smb261)"
@@ -52,13 +56,9 @@
     <arg name="input_camera_name" value="$(arg input_camera_name)" />
   </include>
 
-  <!-- object detection launched on jetson 
-       ! Assumes same username as on current host ! -->
-  <machine  name="jetson" 
-            address="jetson-xavier" 
-            env-loader="~/jetson_env.sh" 
-            user="$(arg GPU_user)"
-            default="false"/>
+  <!-- object detection launched on jetson ! Assumes same username as on current host ! -->
+  <machine  name="jetson" address="jetson-xavier" env-loader="~/jetson_env.sh" 
+            user="$(arg GPU_user)" default="false"/>
 
   <node machine="$(arg object_detection_host)" name="object_detector" pkg="object_detection" type="node.py" output="screen">
     <!--Input related-->
