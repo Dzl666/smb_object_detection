@@ -1,3 +1,4 @@
+#!/home/zilong/anaconda3/envs/open3d_env/bin/python3
 import yaml
 import rospy
 import numpy as np

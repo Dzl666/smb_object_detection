@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/zilong/anaconda3/envs/open3d_env/bin/python
 import rospy
 import rospkg
 import ros_numpy
@@ -8,7 +8,6 @@ from os.path import join
 from numpy.lib.recfunctions import unstructured_to_structured
 
 import message_filters as mf
-import sklearn
 import cv2
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo

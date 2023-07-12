@@ -1,3 +1,4 @@
+#!/home/zilong/anaconda3/envs/open3d_env/bin/python3
 import torch
 import numpy as np
 import os
