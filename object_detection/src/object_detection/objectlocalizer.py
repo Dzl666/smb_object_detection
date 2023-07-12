@@ -42,11 +42,11 @@ class ObjectLocalizer:
         self.bb_contract_percentage         = config["bb_contract_percentage"]
         self.min_cluster_size               = config["min_cluster_size"]
         self.cluster_selection_epsilon      = config["cluster_selection_epsilon"]
-        
+
         self.distance_estimator             = self.estimate_dist_default
-        
+
         if self.distance_estimator_type  != "none":
-            
+
             try:
                 with open(os.path.join(config_dir, self.distance_estimator_type + ".yaml" )) as file:
                     self.estimate_dist_cfg  = yaml.load(file, Loader=yaml.FullLoader)
@@ -65,7 +65,7 @@ class ObjectLocalizer:
                 self.distance_estimator = self.estimate_dist_default
                 rospy.loginfo(msg1)
                 rospy.loginfo(msg2)
-                
+
                 self.learner_data_dir   = os.path.join(os.path.join(config_dir, "data"), self.distance_estimator_type)
                 self.create_save_directory()
 
@@ -76,11 +76,11 @@ class ObjectLocalizer:
 
     def set_scene(self, objects, points2D, points3D, image=None ):
         """Set the scene info such as objects, points2D, points3D, image.
-        
+
         Args:
-            objects     : 2D object detection results in Panda Dataframe 
+            objects     : 2D object detection results in Panda Dataframe
             points2D    : 2D Point cloud in camera frame on the image
-            points3D    : 3D Point cloud in camera frame 
+            points3D    : 3D Point cloud in camera frame
         """
         self.objects    = objects
         self.points3D   = points3D
@@ -94,25 +94,25 @@ class ObjectLocalizer:
             K     : intrinsic camera parameters
         """
         self.K = K
-    
+
     def create_save_directory(self):
-        
+
         if self.distance_estimator_type == "bb2dist":
             if not os.path.exists( self.learner_data_dir):
                 os.makedirs(self.learner_data_dir)
-                 
+
     def save_data_bb2dist(self, input):
-        
+
         ind, pose = input[0], input[1]
-        
-        for i in range(len(self.objects)): 
+
+        for i in range(len(self.objects)):
 
             if ind == i :
                 continue
 
             if self.is_overlapping(ind, i):
                 return
-        
+
         obj_class = self.objects["name"][ind]
         bb_size = self.object_unique_size(ind, self.obj_conf[obj_class]['unique'])
 
@@ -137,16 +137,16 @@ class ObjectLocalizer:
         return (self.objects['xmax'][ind1] >= self.objects['xmin'][ind2]) and \
                (self.objects['xmax'][ind2] >= self.objects['xmin'][ind1]) and \
                (self.objects['ymax'][ind1] >= self.objects['ymin'][ind2]) and \
-               (self.objects['ymax'][ind2] >= self.objects['ymin'][ind1]) 
+               (self.objects['ymax'][ind2] >= self.objects['ymin'][ind1])
 
     def object_id(self, class_id):
         """Returns the object unique id in the scene.
 
         Args:
-            class_id    : class_id (string) 
-        
+            class_id    : class_id (string)
+
         Returns:
-            object_id   : id according to previous occurrences. 
+            object_id   : id according to previous occurrences.
         """
 
         if class_id in self.id_dict:
@@ -155,27 +155,27 @@ class ObjectLocalizer:
         else:
             object_id = 0
             self.id_dict[class_id] = 0
-        return object_id 
+        return object_id
 
     def estimate_pos_with_BB_center(self, center, est_dist):
         """ Estimate the object position with the center of the BB and an estimated distance.
-        
+
         Args:
             center          : Center pixel coordinates of the BB
             est_dist        : Estimated distance of the BB
-        
+
         Returns:
-            estimated_pos   : Estimated 3D point in camera frame 
+            estimated_pos   : Estimated 3D point in camera frame
         """
 
         X = ( center[0] - self.K[0,2] ) * est_dist / self.K[0,0]
         Y = ( center[1] - self.K[1,2] ) * est_dist / self.K[1,1]
 
         return [X, Y, est_dist]
-    
+
     def estimate_dist_default(self, input):
         """ Default object distance estimator. Returns always 0
-        
+
         Args:
             input          : dummy input
 
@@ -183,28 +183,28 @@ class ObjectLocalizer:
             0
         """
         return 0
-    
+
     def estimate_dist_bb2dist(self, input):
         """ Estimate the object distance with the bb2dist method.
-        
+
         Args:
-            input          : list of necessary inputs 
-            input[0]       : index of the target object in the input panda data frame 
+            input          : list of necessary inputs
+            input[0]       : index of the target object in the input panda data frame
             input[1]       : class id of the object ex: person, car, bike ...
-        
+
         Returns:
-            estimated_dist : Estimated 3D point in camera frame 
+            estimated_dist : Estimated 3D point in camera frame
         """
         idx, class_id = input[0], input[1]
         p = np.poly1d(self.estimate_dist_cfg[class_id])
         return max(p(self.object_unique_size(idx, self.obj_conf[class_id]['unique'])), 0.5)
-            
+
     def points_in_BB(self, index):
-        """ Finds the 3D/2D point indices that fall into BB of given object by its index, along with the center point index and pos. 
+        """ Finds the 3D/2D point indices that fall into BB of given object by its index, along with the center point index and pos.
 
         Args:
             index                   : index of the detected object in Pandas data frame
-                    
+
         Returns:
             inside_BB               : indices of points inside the BB
             center_ind              : index of the point that is closest to the center of the object BB
@@ -213,7 +213,7 @@ class ObjectLocalizer:
 
         x_diff = self.objects['xmax'][index] - self.objects['xmin'][index]
         y_diff = self.objects['ymax'][index] - self.objects['ymin'][index]
-        
+
         inside_BB_x = np.logical_and((self.points2D[:,0] >= self.objects['xmin'][index] + x_diff * self.bb_contract_percentage / 100 ), \
                                      (self.points2D[:,0] <= self.objects['xmax'][index] - x_diff * self.bb_contract_percentage / 100))
         inside_BB_y = np.logical_and((self.points2D[:,1] >= self.objects['ymin'][index] + y_diff * self.bb_contract_percentage / 100), \
@@ -232,14 +232,14 @@ class ObjectLocalizer:
         return inside_BB, center_ind, center
 
     def method_hdbscan(self,in_BB_3D, obj_class, estimated_dist):
-        
+
         cluster = hdbscan.HDBSCAN(min_cluster_size=self.min_cluster_size , \
                                   cluster_selection_epsilon=self.cluster_selection_epsilon).fit(in_BB_3D[:,[AXIS_X, AXIS_Z]])
         unique = np.unique(cluster.labels_)
 
         min_val = MAX_DIST
         indices = None
-                
+
         for i in unique:
             if i == -1:
                 continue
@@ -255,15 +255,15 @@ class ObjectLocalizer:
             indices_ = np.nonzero(cluster.labels_ == -1)[0]
             indices  = np.argmin( np.abs( estimated_dist - in_BB_3D[indices_, AXIS_Z]) )
             avg      = in_BB_3D[indices]
-        
-        else:  
+
+        else:
 
             distances = np.squeeze(in_BB_3D[indices, AXIS_Z])
             in_range_indices = np.nonzero( ( np.abs(distances - estimated_dist) - min( np.abs(distances - estimated_dist) ) ) < DEFAULT_MAX_OBJECT_DEPTH )[0]
 
-            indices = indices[in_range_indices]   
+            indices = indices[in_range_indices]
             avg =  np.mean(in_BB_3D[indices], axis=0)
-                             
+
         return avg, indices
 
     def method_histogram(self,in_BB_3D, method = "distance", bins=100):
@@ -273,7 +273,7 @@ class ObjectLocalizer:
         else:
             hist, bin_edges = np.histogram(in_BB_3D[:,2], bins)
 
-        
+
         bin_edges = bin_edges[:-1]
         hist = np.insert(hist, 0, 0)
         bin_edges = np.insert(bin_edges, 0, 0)
@@ -281,22 +281,22 @@ class ObjectLocalizer:
 
         inside_peak = np.logical_and((in_BB_3D[:,2] >= bin_edges[peaks[0]-1]), \
                                      (in_BB_3D[:,2] <= bin_edges[peaks[0]+1]))
-        
+
         return np.mean(in_BB_3D[inside_peak, :], axis=0), inside_peak
-    
+
     def get_object_pos(self, index):
-        """        
+        """
         Args:
             ind             : index of the detected object in Pandas data frame
-            
+
         Returns:
             pos             : position of the object acc. camera frame
-            on_object_ind   : pointcloud-in-frame indices that is on the object 
+            on_object_ind   : pointcloud-in-frame indices that is on the object
         """
 
         obj_class = self.objects["name"][index]
-        
-        # Id of the object 
+
+        # Id of the object
         new_obj_id = self.object_id(obj_class)
 
         # New Object data object
@@ -310,7 +310,7 @@ class ObjectLocalizer:
                 new_obj.pt_indices      = np.array([NO_POSE])
                 new_obj.pos             = np.array([0,0, NO_POSE])
                 new_obj.estimation_type = "none"
-            
+
             else:
                 estimated_dist = self.distance_estimator([index, obj_class])
 
@@ -321,7 +321,7 @@ class ObjectLocalizer:
         else:
             in_BB_3D = self.points3D[in_BB_indices, :]
             # in_BB_2D = self.points2D[in_BB_indices, :]
-            
+
             if self.model_method == "hdbscan":
                 try:
                     estimated_dist = self.distance_estimator([index, obj_class])
@@ -342,12 +342,12 @@ class ObjectLocalizer:
                 pos = in_BB_3D[center_ind,:]
             elif self.model_method == "histogram":
                 pos, on_object = self.method_histogram(in_BB_3D)
-            
+
             # Allign with the bounding box center
             center_point = in_BB_3D[center_ind]
             center_point[[AXIS_X, AXIS_Y]] = center_point[[AXIS_X, AXIS_Y]] * (pos[AXIS_Z] / center_point[AXIS_Z])
             pos[[AXIS_X, AXIS_Y]] = center_point[[AXIS_X, AXIS_Y]]
-            
+
             new_obj.pt_indices      = np.array([in_BB_indices[on_object]]) if isinstance(on_object, np.int64) else in_BB_indices[on_object]
             new_obj.pos             = pos
             new_obj.estimation_type = "measurement"
@@ -357,13 +357,13 @@ class ObjectLocalizer:
     def localize(self, objects, points2D, points3D, image=None):
         """
         Args:
-            objects     : 2D object detection results in Panda Dataframe 
+            objects     : 2D object detection results in Panda Dataframe
             points2D    : 2D Point cloud in camera frame on the image
-            points3D    : 3D Point cloud in camera frame 
+            points3D    : 3D Point cloud in camera frame
             image       : RGB image of detection
-        
+
         Returns:
-            object_list : list of DetectedObjects correspond to the order of the input objects structure. 
+            object_list : list of DetectedObjects correspond to the order of the input objects structure.
 
         """
 
