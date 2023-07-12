@@ -1,21 +1,17 @@
 <launch>
 <!-- TODO load the bag yaml file -->
-  <arg name="rosbag_name" default="artefact_detection_test"/>
+  <arg name="rosbag_name" default="smb_object_detect_3"/>
+  <arg name="config_name" default="smb_object_detect_34"/>
+  <arg name="rosbag_path" default="/home/zilong/git/$(arg rosbag_name).bag"/>
+  <arg name="config_file" default="/home/zilong/git/$(arg config_name).yaml"/>
   
-  <arg name="rosbag_path" default="/home/shobhit/Downloads/$(arg rosbag_name).bag"/>
-  
-  <arg name="config_file" default="/home/shobhit/Downloads/$(arg rosbag_name).yaml"/>
-  
-  <arg  name="gpu" 
-        default="off"
+  <arg  name="gpu" default="off"
         doc="Run on GPU? Options: 'local', 'remote', 'off' (default)"/>
   
-  <arg  name="input_camera_name"
-        default="/rgb_camera" 
+  <arg  name="input_camera_name" default="/rgb_camera" 
         doc="Name of the camera, i.e. topic prefix for camera stream and camera info. Relevant for topic subscriptions."/>
   
-  <arg  name="lidar_topic" 
-        default='/rslidar/points'
+  <arg  name="lidar_topic" default='/rslidar/points'
         doc="Topic containing the point cloud from the lidar."/>
 
   <node name="image_dropper" type="drop" pkg="topic_tools" args="$(arg input_camera_name)/image_raw 19 20 $(arg input_camera_name)/slow/image_raw" />
@@ -29,11 +25,12 @@
     <arg name="lidar_topic" value="$(arg lidar_topic)" />
   </include>
 
-  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" args="-d $(find object_detection)/rviz/object_detection.rviz">
+  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen"
+    args="-d $(find object_detection)/rviz/object_detection.rviz">
     <rosparam command="load" file="$(arg config_file)" />
   </node>
 
-  <node pkg="rosbag" type="play" name="player" output="screen" args="-d 3 --clock $(arg rosbag_path)" required = "false"/>
+  <node pkg="rosbag" type="play" name="player" output="screen" args="-d 3 --clock $(arg rosbag_path)" required="false"/>
 </launch>
 
 <!-- HAve it run locally on Jetson -->
