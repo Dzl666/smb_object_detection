@@ -1,3 +1,4 @@
+import argparse
 import rospy
 from std_msgs.msg import String
 import numpy as np
@@ -22,7 +23,7 @@ def detection_info_callback(msg):
     # Append received message to the list
 
     # TODO change frame to world frame
-    detected_info_messages.append(msg.data)
+    detected_info_messages.append(msg)
 
 def process_detected_objects_callback(msg):
     # Create an array with all the messages
@@ -31,6 +32,8 @@ def process_detected_objects_callback(msg):
         all_detections += m.info
 
     # Find points for each class
+    out_classes = []
+    out_points = np.zeros((0, 3))
     for class in CLASSES:
         msg_of_class = [m if class == m.class_id for m in all_detections]
 
@@ -51,7 +54,7 @@ def process_detected_objects_callback(msg):
             failed = False
             for i in range(n_clusters):
                 mask = kmeans.labels_ == i
-                points = X[n_clusters, :]
+                points = X[mask, :]
                 var = np.var(points, axis=0)
                 if np.all(var > THRES):
                     failed = True
@@ -61,21 +64,28 @@ def process_detected_objects_callback(msg):
                 n_clusters += 1
                 continue
             else:
+                out_classes += [class for _ in range(n_clusters)]
+                out_points = np.concatenate((out_points, kmeans.cluster_centers_))
                 break
 
 
-def listener():
+def listener(args):
     # Initiate a node
     rospy.init_node('listener_node')
 
     # Subscribe to the 'detection_info' topic
-    rospy.Subscriber('detection_info', String, detection_info_callback)
+    rospy.Subscriber(args.detection_info_topic, String, detection_info_callback)
 
     # Subscribe to the 'process_detected_objects' topic
-    rospy.Subscriber('process_detected_objects', String, process_detected_objects_callback)
+    rospy.Subscriber(args.process_topic, String, process_detected_objects_callback)
 
     # Keep the node running until it is stopped
     rospy.spin()
 
+
 if __name__ == '__main__':
-    listener()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--detection_info_topic', type=str, default='/object_detector/detection_info')
+    parser.add_argument('-p', '--process_topic', type=str, default='/object_detector/process_points')
+    args = vars(parser.parse_args())
+    listener(args)
