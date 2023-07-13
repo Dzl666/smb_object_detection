@@ -40,7 +40,6 @@ class PointProjector:
         Args:
             K       : Camera intrinsic matrix 
             size    : Image size
-        
         """
         self.K      = K
         self.w      = size[0]

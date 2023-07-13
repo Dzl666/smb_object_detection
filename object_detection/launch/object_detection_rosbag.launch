@@ -1,6 +1,6 @@
 <launch>
-  <arg name="rosbag_name" default="smb_object_detect_3"/>
-  <arg name="config_name" default="smb_object_detect_34"/>
+  <arg name="rosbag_name" default="smb_obj"/>
+  <arg name="config_name" default="smb_obj_detect_new"/>
   <arg name="rosbag_path" default="/home/zilong/git/$(arg rosbag_name).bag"/>
   <arg name="config_file" default="/home/zilong/git/$(arg config_name).yaml"/>
   
